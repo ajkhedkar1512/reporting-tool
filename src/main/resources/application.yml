@@ -1,0 +1,54 @@
+server:
+  port: 8095
+  tomcat:
+    connection-timeout: -1
+  servlet:
+    context-path: /reporting
+
+spring:
+  mvc:
+    async:
+      request-timeout: 60000
+
+  #####################################################
+  # data source config
+  # mongo
+  #####################################################
+  data:
+    mongodb:
+      uri:  mongodb+srv://db_admin_ohio:db_ohio@chl-prod-cluster-pl-0.yksog.mongodb.net/dash
+
+#####################################################
+# SQS Configuration
+#####################################################
+cloud:
+  aws:
+    stack:
+      # this is to disable spring auto creation of sqs stack
+      auto: false
+
+    #To resolve - There is no EC2 meta data available, because the application is not running in the EC2 environment.
+    #Region detection is only possible if the application is running on EC2
+    region:
+      static: us-east-1
+
+
+
+#####################################################
+# printing queries config
+# do not use it other than dev/local env
+#####################################################
+logging:
+  level:
+    org:
+      springframework:
+        data:
+          mongodb:
+            core:
+              MongoTemplate: DEBUG
+
+reporting-tool:
+  region: us-east-1
+  bucket: dash-chl-prod-dash
+  outputFolderPath: dash/output-files
+
