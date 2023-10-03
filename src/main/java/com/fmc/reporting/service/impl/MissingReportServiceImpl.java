@@ -118,6 +118,7 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
                     missingFields.addAll(List.of("Flood Zone", "Flood Cert Provider"));
                 }
             }
+
         });
         //Check Borrower 1 fields for 77/98
         List.of("Borrower 1 First Name", "Borrower 1 Middle Name", "Borrower 1 Last Name", "Borrower 1 Suffix")
