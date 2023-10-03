@@ -2,7 +2,6 @@ package com.fmc.reporting.utils;
 
 import com.fmc.reporting.constants.Constants;
 
-import java.awt.desktop.SystemSleepEvent;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
@@ -47,7 +46,7 @@ public class DateTimeUtils {
     public static String getMondayDate(final String friday) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         LocalDate date = LocalDate.parse(friday, formatter);
-        LocalDate newDate = date.plusDays( 3);
+        LocalDate newDate = date.plusDays( 4);
         System.out.println( newDate.format(formatter));
         return newDate.format(formatter);
     }
