@@ -25,7 +25,7 @@ public class LoanDetailsReportServiceImpl extends AbstractBaseService implements
     @Override
     public LoanDetailsReport build(final String currentDate, final List<String> previousDates) {
         final List<DocumentDetailsDto> docDetails = new ArrayList<>();
-        previousDates.stream().skip(1)
+        previousDates.stream()
                 .forEach(date -> docDetails.addAll(documentDetailsService.getAllDocumentsBetweenDate(minusDays(date), date)));
         docDetails.addAll(documentDetailsService.getAllDocumentsForDate(currentDate));
         final List<LoanDetailsDto> loanDetails = new ArrayList<>();
