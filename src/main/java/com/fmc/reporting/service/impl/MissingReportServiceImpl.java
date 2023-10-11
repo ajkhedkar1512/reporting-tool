@@ -196,16 +196,16 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
                             if (!ObjectUtils.isEmpty(loanType.getKeywordValue())) {
                                 switch (loanType.getKeywordValue()) {
                                     case "VA":
-                                        build.setMissingDocs(getMissingDocNames(docIdsExistInLoan, ReqDocsLoanEnum.mergedMapWithREG(ReqDocsLoanEnum.VA)));
+                                        build.setMissingDocs(getMissingDocNames_VALoanType(docIdsExistInLoan, ReqDocsLoanEnum.mergedMapWithREG(ReqDocsLoanEnum.VA)));
                                         break;
                                     case "FHA":
-                                        build.setMissingDocs(getMissingDocNames(docIdsExistInLoan, ReqDocsLoanEnum.mergedMapWithREG(ReqDocsLoanEnum.FHA)));
+                                        build.setMissingDocs(getMissingDocNames_FHALoanType(docIdsExistInLoan, ReqDocsLoanEnum.mergedMapWithREG(ReqDocsLoanEnum.FHA)));
                                         break;
                                     case "USDA":
                                         build.setMissingDocs(getMissingDocNames(docIdsExistInLoan, ReqDocsLoanEnum.mergedMapWithREG(ReqDocsLoanEnum.USDA)));
                                         break;
                                     default:
-                                        build.setMissingDocs(getMissingDocNames(docIdsExistInLoan, ReqDocsLoanEnum.REG.getRequiredDocIds()));
+                                        build.setMissingDocs(getMissingDocNames_AllLoanType(docIdsExistInLoan, ReqDocsLoanEnum.REG.getRequiredDocIds()));
                                         break;
                                 }
                             } else {
@@ -269,4 +269,60 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
         return ObjectUtils.isEmpty(missingDocName) ? "" : missingDocName.toString();
     }
 
+    private String getMissingDocNames_AllLoanType(final Set<String> docIdsExistInLoan, final Map<String, String> reqDocIdNameMap) {
+        final Set<String> reqDocIds = new HashSet<>(reqDocIdNameMap.keySet());
+        final List<String> missingDocIds = new ArrayList<>(reqDocIds);
+        missingDocIds.removeAll(docIdsExistInLoan);
+
+        StringBuilder missingDocName = new StringBuilder();
+        for (String docId: missingDocIds) {
+            missingDocName.append(", ").append(reqDocIdNameMap.get(docId));
+        }
+        //"1199", "IEADS" or "1198" either of one should present
+        if (!docIdsExistInLoan.contains("56")) {
+            missingDocName.append(", ").append("Appraisal / Subject Property");
+        }
+        if(!docIdsExistInLoan.contains("1198") && !docIdsExistInLoan.contains("1199")) {
+            missingDocName.append(", ").append("Initial Escrow Account Disclosure Statement");
+        }
+
+
+        return ObjectUtils.isEmpty(missingDocName) ? "" : missingDocName.toString();
+    }
+
+    private String getMissingDocNames_VALoanType(final Set<String> docIdsExistInLoan, final Map<String, String> reqDocIdNameMap) {
+        final Set<String> reqDocIds = new HashSet<>(reqDocIdNameMap.keySet());
+        final List<String> missingDocIds = new ArrayList<>(reqDocIds);
+        missingDocIds.removeAll(docIdsExistInLoan);
+
+        StringBuilder missingDocName = new StringBuilder();
+        for (String docId: missingDocIds) {
+            missingDocName.append(", ").append(reqDocIdNameMap.get(docId));
+        }
+        if(!docIdsExistInLoan.contains("648") && !docIdsExistInLoan.contains("692") && !docIdsExistInLoan.contains("235")) {
+            missingDocName.append(", ").append("VA Loan Guaranty Documents");
+        }
+        if(!docIdsExistInLoan.contains("628") && !docIdsExistInLoan.contains("772")) {
+            missingDocName.append(", ").append("VA Case # Assignment");
+        }
+        return ObjectUtils.isEmpty(missingDocName) ? "" : missingDocName.toString();
+    }
+
+    private String getMissingDocNames_FHALoanType(final Set<String> docIdsExistInLoan, final Map<String, String> reqDocIdNameMap) {
+        final Set<String> reqDocIds = new HashSet<>(reqDocIdNameMap.keySet());
+        final List<String> missingDocIds = new ArrayList<>(reqDocIds);
+        missingDocIds.removeAll(docIdsExistInLoan);
+
+        StringBuilder missingDocName = new StringBuilder();
+        for (String docId : missingDocIds) {
+            missingDocName.append(", ").append(reqDocIdNameMap.get(docId));
+        }
+        if ((!docIdsExistInLoan.contains("648") && !docIdsExistInLoan.contains("692")) && !docIdsExistInLoan.contains("235")) {
+            missingDocName.append(", ").append("FHA Insuring Documents");
+        }
+        if (!docIdsExistInLoan.contains("628") && !docIdsExistInLoan.contains("772")) {
+            missingDocName.append(", ").append("FHA # Assignment");
+        }
+        return ObjectUtils.isEmpty(missingDocName) ? "" : missingDocName.toString();
+    }
 }

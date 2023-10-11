@@ -13,13 +13,13 @@ import java.util.stream.Stream;
 @Getter
 public enum ReqDocsLoanEnum {
 
-    REG("reg", Map.of("98", "1003", "56", "Apprisal", "2353", "CD",  "1199", "IEADS", "76", "DOT", "77", "Note")),
+    REG("reg", Map.of("98", "1003", "2353", "CD", "76", "DOT", "77", "Note")),
 
     USDA("usda", Map.of( "601", "MIC/LGC/LNG")),
 
-    VA("va", Map.of("601", "MIC/LGC/LNG", "235", "VA 26-1805 Request for Determination of Reasonable Value")),
+    VA("va", Map.of("601", "MIC/LGC/LNG")),
 
-    FHA("fha", Map.of("628", "FHA Case", "648", "Case Query","601", "MIC/LGC/LNG","692", "Appraisal Logging"));
+    FHA("fha", Map.of("601", "MIC/LGC/LNG"));
 
     private final String loanType;
     private final Map<String, String> requiredDocIds ;
