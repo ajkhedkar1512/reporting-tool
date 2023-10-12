@@ -219,7 +219,7 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
             }
         });
         List<ExternalServiceDtos> extFilterList = externaldtosList.stream().filter(p -> p.getDetails().stream().anyMatch(data -> data.getDocId().equals("2353"))).collect(Collectors.toList());
-        extFilterList.stream().sorted();
+        Collections.sort(extFilterList,(s1,s2)->{return getFormattedDate(s1.getPackageCreatedDate()).compareTo(getFormattedDate(s2.getPackageCreatedDate()));});
         if (!ObjectUtils.isEmpty(extFilterList)) {
             finalDto = extFilterList.get(extFilterList.size() - 1);
         }
