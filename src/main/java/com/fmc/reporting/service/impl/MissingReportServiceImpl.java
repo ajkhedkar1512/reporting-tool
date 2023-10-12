@@ -11,6 +11,7 @@ import org.springframework.util.ObjectUtils;
 
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
@@ -36,11 +37,31 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
         docDetails.addAll(documentDetailsService.getAllDocumentsForDate(currentDate));
         final List<MissingDocDto> loanDetails = new ArrayList<>();
         final List<MissingFieldMappingDto> mappingFields = mappingService.getAll();
-        docDetails.forEach(doc -> {
+
+        Map<String,List<DocumentDetailsDto>> sameLoanMap = docDetails.stream().collect(Collectors.groupingBy(docdet->docdet.getLoanNumber()));
+
+        sameLoanMap.entrySet().stream().forEach(key -> {
+            final List<DocumentDetailsDto> validDocDetails = new ArrayList<>();
+            key.getValue().stream().forEach(documentDetailsDto -> {
+
+                if (((documentDetailsDto.getStageId().equals(4) || documentDetailsDto.getStageId().equals(5)) && documentDetailsDto.getUserDocStatusId().equals(3))
+                        || documentDetailsDto.getStageId().equals(6) ) {
+                    validDocDetails.add(documentDetailsDto);
+                }
+            });
+            if (!ObjectUtils.isEmpty(validDocDetails)) {
+                loanDetails.addAll(buildMissingDocForCurrentDate(validDocDetails));
+            }
+        });
+
+       /* docDetails.forEach(doc -> {
             if (((doc.getStageId().equals(4) || doc.getStageId().equals(5)) && doc.getUserDocStatusId().equals(3))
                     || doc.getStageId().equals(6) )
                 loanDetails.addAll(buildMissingDocForCurrentDate(doc));
                //loanDetails.add(buildMissingDocForCurrentDateV2(doc, mappingFields));
+        });*/
+        Collections.sort(loanDetails, (s1, s2) ->{
+            return s1.getDate().compareTo(s2.getDate());
         });
         return MissingDocReport.builder().missingDocs(loanDetails).build();
     }
@@ -171,89 +192,102 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
         return getFieldValue(field, dataByDocId).isEmpty();
     }
 
-    private  List<MissingDocDto> buildMissingDocForCurrentDate(final DocumentDetailsDto doc) {
+    private  List<MissingDocDto> buildMissingDocForCurrentDate(final List<DocumentDetailsDto> docList) {
         final  List<MissingDocDto> loanDetails = new ArrayList<>();
-        final MissingDocDto build = MissingDocDto.builder().date(getFormattedDate(doc.getPackageCreatedDate()))
-                .loanId(doc.getLoanNumber()).packageId(doc.getPackageId()).build();
-        final String fileName = String.join("_", doc.getLoanNumber(),
-                doc.getSourceSystemName(), doc.getPackageId(), doc.getUniqueDocumentId() + ".json");
-        final String filePath = String.join("/", "dash/dare-files", fileName);
-        ExternalServiceDtos dto;
-        try (InputStream inputStream = s3Service.download(filePath)) {
-            final ObjectMapper mapper = new ObjectMapper();
-            mapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
-            dto  = mapper.readValue(inputStream, ExternalServiceDtos.class);
-            final Set<String> docIdsExistInLoan = dto.getDetails().stream()
-                    .map(ExternalServiceDto::getDocId).collect(Collectors.toSet());
-            if (!docIdsExistInLoan.contains("2353")) {
-                build.setMissingDocs("Closing Disclosure missing");
-            } else {
-                dto.getDetails().stream()
-                        .filter(data -> data.getDocId().equals("2353")).findFirst()
-                        .ifPresent(data -> {
-                            final KeywordsDto loanType = data.getKeywords().stream().filter(keyword -> keyword.getKeywordName().equals("Loan Type"))
-                                    .findFirst().orElse(KeywordsDto.builder().build());
-                            if (!ObjectUtils.isEmpty(loanType.getKeywordValue())) {
-                                switch (loanType.getKeywordValue()) {
-                                    case "VA":
-                                        build.setMissingDocs(getMissingDocNames_VALoanType(docIdsExistInLoan, ReqDocsLoanEnum.mergedMapWithREG(ReqDocsLoanEnum.VA)));
-                                        break;
-                                    case "FHA":
-                                        build.setMissingDocs(getMissingDocNames_FHALoanType(docIdsExistInLoan, ReqDocsLoanEnum.mergedMapWithREG(ReqDocsLoanEnum.FHA)));
-                                        break;
-                                    case "USDA":
-                                        build.setMissingDocs(getMissingDocNames(docIdsExistInLoan, ReqDocsLoanEnum.mergedMapWithREG(ReqDocsLoanEnum.USDA)));
-                                        break;
-                                    default:
-                                        build.setMissingDocs(getMissingDocNames_AllLoanType(docIdsExistInLoan, ReqDocsLoanEnum.REG.getRequiredDocIds()));
-                                        break;
-                                }
-                            } else {
-                                build.setMissingDocs(getMissingDocNames(docIdsExistInLoan, ReqDocsLoanEnum.REG.getRequiredDocIds()));
+
+        AtomicReference<Set<String>> docIdsExistInLoan = new AtomicReference<>(new HashSet<>());
+        final MissingDocDto build = MissingDocDto.builder().date(getFormattedDate(docList.get(0).getPackageCreatedDate()))
+                .loanId(docList.get(0).getLoanNumber()).packageId(docList.get(0).getPackageId()).build();
+        ExternalServiceDtos finalDto = null;
+        List<ExternalServiceDtos> externaldtosList = new ArrayList<>();
+        docList.stream().forEach(doc ->{
+            final String fileName = String.join("_", doc.getLoanNumber(),
+                    doc.getSourceSystemName(), doc.getPackageId(), doc.getUniqueDocumentId() + ".json");
+            final String filePath = String.join("/", "dash/dare-files", fileName);
+
+            try (InputStream inputStream = s3Service.download(filePath)) {
+                final ObjectMapper mapper = new ObjectMapper();
+                mapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
+                ExternalServiceDtos dto;
+                dto = mapper.readValue(inputStream, ExternalServiceDtos.class);
+                externaldtosList.add(dto);
+                docIdsExistInLoan.set(dto.getDetails().stream()
+                        .map(ExternalServiceDto::getDocId).collect(Collectors.toSet()));
+            } catch (final Exception ex) {
+                System.out.println("Error occurred to get data for package." + ex);
+                build.setComment(ex.getMessage());
+            }
+        });
+        List<ExternalServiceDtos> extFilterList = externaldtosList.stream().filter(p -> p.getDetails().stream().anyMatch(data -> data.getDocId().equals("2353"))).collect(Collectors.toList());
+        extFilterList.stream().sorted();
+        if (!ObjectUtils.isEmpty(extFilterList)) {
+            finalDto = extFilterList.get(extFilterList.size() - 1);
+        }
+        if (ObjectUtils.isEmpty(finalDto) && !docIdsExistInLoan.get().contains("2353")) {
+            build.setMissingDocs("Closing Disclosure missing");
+        } else {
+            finalDto.getDetails().stream()
+                    .filter(data -> data.getDocId().equals("2353")).findFirst()
+                    .ifPresent(data -> {
+                        final KeywordsDto loanType = data.getKeywords().stream().filter(keyword -> keyword.getKeywordName().equals("Loan Type"))
+                                .findFirst().orElse(KeywordsDto.builder().build());
+                        if (!ObjectUtils.isEmpty(loanType.getKeywordValue())) {
+                            switch (loanType.getKeywordValue()) {
+                                case "VA":
+                                    build.setMissingDocs(getMissingDocNames_VALoanType(docIdsExistInLoan.get(), ReqDocsLoanEnum.mergedMapWithREG(ReqDocsLoanEnum.VA)));
+                                    break;
+                                case "FHA":
+                                    build.setMissingDocs(getMissingDocNames_FHALoanType(docIdsExistInLoan.get(), ReqDocsLoanEnum.mergedMapWithREG(ReqDocsLoanEnum.FHA)));
+                                    break;
+                                case "USDA":
+                                    build.setMissingDocs(getMissingDocNames(docIdsExistInLoan.get(), ReqDocsLoanEnum.mergedMapWithREG(ReqDocsLoanEnum.USDA)));
+                                    break;
+                                default:
+                                    build.setMissingDocs(getMissingDocNames_AllLoanType(docIdsExistInLoan.get(), ReqDocsLoanEnum.REG.getRequiredDocIds()));
+                                    break;
                             }
-                            //Check FI
-                            data.getKeywords().stream()
-                                    .filter(keyword -> keyword.getKeywordName().equals("Flood Certification Fee"))
-                                    .findFirst().ifPresent(keyword -> {
-                                        if (!ObjectUtils.isEmpty(keyword.getKeywordValue())
-                                                && Double.parseDouble(keyword.getKeywordValue().substring(1)) > 0.0) {
-                                            if (!docIdsExistInLoan.contains("71")) {
-                                                build.setMissingDocs(build.getMissingDocs() + ", Flood Cert");
-                                            }
+                        } else {
+                            build.setMissingDocs(getMissingDocNames(docIdsExistInLoan.get(), ReqDocsLoanEnum.REG.getRequiredDocIds()));
+                        }
+                        //Check FI
+                        data.getKeywords().stream()
+                                .filter(keyword -> keyword.getKeywordName().equals("Flood Certification Fee"))
+                                .findFirst().ifPresent(keyword -> {
+                                    if (!ObjectUtils.isEmpty(keyword.getKeywordValue())
+                                            && Double.parseDouble(keyword.getKeywordValue().replace(",","").substring(1)) > 0.0) {
+                                        if (!docIdsExistInLoan.get().contains("71")) {
+                                            build.setMissingDocs(build.getMissingDocs() + ", Flood Certificate");
                                         }
-                                    });
-                            //Check HOA
-                            data.getKeywords().stream()
-                                    .filter(keyword -> keyword.getKeywordName().equals("Mortgage Insurance"))
-                                    .findFirst().ifPresent(keyword -> {
-                                        if (!ObjectUtils.isEmpty(keyword.getKeywordValue())
-                                                && Double.parseDouble(keyword.getKeywordValue().substring(1)) > 0.0) {
-                                            if (!docIdsExistInLoan.contains("75")) {
-                                                build.setMissingDocs(build.getMissingDocs() + ", HOI");
-                                            }
+                                    }
+                                });
+                        //Check HOA
+                        data.getKeywords().stream()
+                                .filter(keyword -> keyword.getKeywordName().equals("Mortgage Insurance"))
+                                .findFirst().ifPresent(keyword -> {
+                                    if (!ObjectUtils.isEmpty(keyword.getKeywordValue())
+                                            && Double.parseDouble(keyword.getKeywordValue().substring(1)) > 0.0) {
+                                        if (!docIdsExistInLoan.get().contains("75")) {
+                                            build.setMissingDocs(build.getMissingDocs() + ", Insurance Policy (Hazard, Flood, Windstorm, Etc)");
                                         }
-                                    });
-                            //Check MI Cert
-                            data.getKeywords().stream()
-                                    .filter(keyword -> keyword.getKeywordName().equals("Mortgage Insurance"))
-                                    .findFirst().ifPresent(keyword -> {
-                                        if (!ObjectUtils.isEmpty(keyword.getKeywordValue())
-                                                && Double.parseDouble(keyword.getKeywordValue().substring(1)) > 0.0) {
-                                            if (!docIdsExistInLoan.contains("35")) {
-                                                build.setMissingDocs(build.getMissingDocs() + ", MI Cert");
-                                            }
+                                    }
+                                });
+                        //Check MI Cert
+                        data.getKeywords().stream()
+                                .filter(keyword -> keyword.getKeywordName().equals("Mortgage Insurance"))
+                                .findFirst().ifPresent(keyword -> {
+                                    if (!ObjectUtils.isEmpty(keyword.getKeywordValue())
+                                            && Double.parseDouble(keyword.getKeywordValue().substring(1)) > 0.0) {
+                                        if (!docIdsExistInLoan.get().contains("35")) {
+                                            build.setMissingDocs(build.getMissingDocs() + ", MI Certificate");
                                         }
-                                    });
-                        });
-            }
-            if (!ObjectUtils.isEmpty(build.getMissingDocs())) {
-                build.setMissingDocs(build.getMissingDocs().substring(1) + " missing");
-                build.setStatus("open");
-                loanDetails.add(build);
-            }
-        } catch (final Exception ex) {
-            System.out.println("Error occurred to get data for package." + ex);
-            build.setComment(ex.getMessage());
+                                    }
+                                });
+                    });
+        }
+        if (!ObjectUtils.isEmpty(build.getMissingDocs())) {
+            build.setMissingDocs(build.getMissingDocs().substring(1) + " missing");
+            build.setStatus("open");
+            loanDetails.add(build);
         }
         return loanDetails;
     }
