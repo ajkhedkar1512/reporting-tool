@@ -1,15 +1,19 @@
 package com.fmc.reporting.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fmc.reporting.document.PresentDocId;
 import com.fmc.reporting.dto.*;
 import com.fmc.reporting.enums.ReqDocsLoanEnum;
 import com.fmc.reporting.exception.BaseException;
+import com.fmc.reporting.repo.PresentDocIdRepo;
 import com.fmc.reporting.service.*;
+import com.fmc.reporting.utils.DateTimeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
 import java.io.InputStream;
+import java.time.Clock;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -27,6 +31,8 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
     private final S3Service s3Service;
 
     private final MissingFieldMappingService mappingService;
+
+    private final PresentDocIdRepo presentDocIdRepo;
 
 
     @Override
@@ -226,6 +232,9 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
         if (ObjectUtils.isEmpty(finalDto) && !docIdsExistInLoan.get().contains("2353")) {
             build.setMissingDocs("Closing Disclosure missing");
         } else {
+            // cal the previous day doc List
+            // compare current list and previous day list
+            //find the docId from the previous day list
             finalDto.getDetails().stream()
                     .filter(data -> data.getDocId().equals("2353")).findFirst()
                     .ifPresent(data -> {
@@ -282,13 +291,43 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
                                         }
                                     }
                                 });
+
                     });
+
+
         }
+
+
         if (!ObjectUtils.isEmpty(build.getMissingDocs())) {
             build.setMissingDocs(build.getMissingDocs().substring(1) + " missing");
             build.setStatus("open");
+            String oldMissingId = null;
+            int count =5;
+            while(count<=1){
+                Optional<PresentDocId> byDateAndLoanNumber = presentDocIdRepo
+                        .findByLoanNumberAndDate(docList.get(0).getLoanNumber(),minusDays(getFormattedDate(Clock.systemUTC().instant().toString())));
+                if(!ObjectUtils.isEmpty(byDateAndLoanNumber.get())){
+                    oldMissingId = byDateAndLoanNumber.get().getMissingDoc();
+                    break;
+                }
+                count--;
+            }
+            if(ObjectUtils.isEmpty(oldMissingId)) {
+                String[] oldMissingIdSplit = oldMissingId.split(",");
+                String[] newMissingDocsSplit = loanDetails.get(0).getMissingDocs().split(",");
+                HashSet<String> s1 = new HashSet<String>(Arrays.asList(oldMissingIdSplit));
+                s1.removeAll(Arrays.asList(newMissingDocsSplit));
+                s1.forEach(doc -> build.setMissingDocs(build.getMissingDocs().substring(1) + doc + "(Received)"));
+            }
+
+
+            presentDocIdRepo.save(PresentDocId.builder().missingDoc(loanDetails.get(0).getMissingDocs())
+                    .loanNumber(docList.get(0).getLoanNumber())
+                    .date(DateTimeUtils.getFormattedDate(java.time.Clock.systemUTC().instant().toString())).build());
             loanDetails.add(build);
         }
+
+
         return loanDetails;
     }
 

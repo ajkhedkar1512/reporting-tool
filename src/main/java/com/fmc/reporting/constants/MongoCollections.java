@@ -9,4 +9,6 @@ public class MongoCollections {
     public static final String MISSING_REPORT = "missing_report";
 
     public static final String MISSING_FIELD_MAPPING = "missing_fields_mapping";
+
+    public static final String MISSING_REPORT_DOCS = "missing_report_docs";
 }
