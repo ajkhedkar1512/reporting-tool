@@ -21,6 +21,14 @@ public class DateTimeUtils {
         return newDate.format(formatter);
     }
 
+    public static String minusDaysWithInput(final String input, final Integer days) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate date = LocalDate.parse(input, formatter);
+        LocalDate newDate = date.minusDays( days);
+        System.out.println( newDate.format(formatter));
+        return newDate.format(formatter);
+    }
+
     public static String plusDays(final String input) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         LocalDate date = LocalDate.parse(input, formatter);

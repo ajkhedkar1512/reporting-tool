@@ -305,26 +305,24 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
             int count =5;
             while(count<=1){
                 Optional<PresentDocId> byDateAndLoanNumber = presentDocIdRepo
-                        .findByLoanNumberAndDate(docList.get(0).getLoanNumber(),minusDays(getFormattedDate(Clock.systemUTC().instant().toString())));
+                        .findByLoanNumberAndDate(docList.get(0).getLoanNumber(),minusDays(getFormattedDate(java.time.LocalDate.now().toString())));
                 if(!ObjectUtils.isEmpty(byDateAndLoanNumber.get())){
                     oldMissingId = byDateAndLoanNumber.get().getMissingDoc();
                     break;
                 }
                 count--;
             }
-            if(ObjectUtils.isEmpty(oldMissingId)) {
+            if(!ObjectUtils.isEmpty(oldMissingId)) {
                 String[] oldMissingIdSplit = oldMissingId.split(",");
                 String[] newMissingDocsSplit = loanDetails.get(0).getMissingDocs().split(",");
                 HashSet<String> s1 = new HashSet<String>(Arrays.asList(oldMissingIdSplit));
                 s1.removeAll(Arrays.asList(newMissingDocsSplit));
                 s1.forEach(doc -> build.setMissingDocs(build.getMissingDocs().substring(1) + doc + "(Received)"));
             }
-
-
-            presentDocIdRepo.save(PresentDocId.builder().missingDoc(loanDetails.get(0).getMissingDocs())
-                    .loanNumber(docList.get(0).getLoanNumber())
-                    .date(DateTimeUtils.getFormattedDate(java.time.Clock.systemUTC().instant().toString())).build());
             loanDetails.add(build);
+            presentDocIdRepo.save(PresentDocId.builder().missingDoc(loanDetails.get(0).getMissingDocs())
+                    .loanNumber(loanDetails.get(0).getLoanId())
+                    .date(DateTimeUtils.getFormattedDate(minusDays(java.time.LocalDate.now().toString()))).build());
         }
 
 
