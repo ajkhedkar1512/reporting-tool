@@ -7,5 +7,5 @@ import java.util.Optional;
 
 @Repository
 public interface PresentDocIdRepo extends BaseRepository<PresentDocId, String> {
-    Optional<PresentDocId> findByLoanNumberAndDate(String loanNumber,String date);
+    PresentDocId findByLoanNumberAndDate(String loanNumber,String date);
 }

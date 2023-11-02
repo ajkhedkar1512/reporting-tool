@@ -19,8 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
-import static com.fmc.reporting.utils.DateTimeUtils.getFormattedDate;
-import static com.fmc.reporting.utils.DateTimeUtils.minusDays;
+import static com.fmc.reporting.utils.DateTimeUtils.*;
 
 @Service
 @RequiredArgsConstructor
@@ -302,27 +301,32 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
             build.setMissingDocs(build.getMissingDocs().substring(1) + " missing");
             build.setStatus("open");
             String oldMissingId = null;
-            int count =5;
-            while(count<=1){
-                Optional<PresentDocId> byDateAndLoanNumber = presentDocIdRepo
-                        .findByLoanNumberAndDate(docList.get(0).getLoanNumber(),minusDays(getFormattedDate(java.time.LocalDate.now().toString())));
-                if(!ObjectUtils.isEmpty(byDateAndLoanNumber.get())){
-                    oldMissingId = byDateAndLoanNumber.get().getMissingDoc();
+            int count =4;
+            int days =1;
+            while(count>=1){
+                PresentDocId byDateAndLoanNumber = presentDocIdRepo
+                        .findByLoanNumberAndDate(docList.get(0).getLoanNumber(), minusDaysWithInput(getFormattedDate(java.time.LocalDate.now().toString()), days));
+                if(!ObjectUtils.isEmpty(byDateAndLoanNumber)){
+                    oldMissingId = byDateAndLoanNumber.getMissingDoc().trim().replace("missing","");
                     break;
                 }
                 count--;
+                days++;
             }
+            HashSet<String> s1=new HashSet<String>();
             if(!ObjectUtils.isEmpty(oldMissingId)) {
                 String[] oldMissingIdSplit = oldMissingId.split(",");
-                String[] newMissingDocsSplit = loanDetails.get(0).getMissingDocs().split(",");
-                HashSet<String> s1 = new HashSet<String>(Arrays.asList(oldMissingIdSplit));
+                String[] newMissingDocsSplit = build.getMissingDocs().trim().replace("missing","").split(",");
+                s1 = new HashSet<String>(Arrays.asList(oldMissingIdSplit));
                 s1.removeAll(Arrays.asList(newMissingDocsSplit));
-                s1.forEach(doc -> build.setMissingDocs(build.getMissingDocs().substring(1) + doc + "(Received)"));
+
             }
-            loanDetails.add(build);
-            presentDocIdRepo.save(PresentDocId.builder().missingDoc(loanDetails.get(0).getMissingDocs())
-                    .loanNumber(loanDetails.get(0).getLoanId())
+            presentDocIdRepo.save(PresentDocId.builder().missingDoc(build.getMissingDocs())
+                    .loanNumber(build.getLoanId())
                     .date(DateTimeUtils.getFormattedDate(minusDays(java.time.LocalDate.now().toString()))).build());
+            s1.forEach(doc -> build.setMissingDocs(build.getMissingDocs().substring(1) + "," +doc + "(Received)"));
+            loanDetails.add(build);
+
         }
 
 
