@@ -273,7 +273,7 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
                                 .filter(keyword -> keyword.getKeywordName().equals("Mortgage Insurance"))
                                 .findFirst().ifPresent(keyword -> {
                                     if (!ObjectUtils.isEmpty(keyword.getKeywordValue())
-                                            && Double.parseDouble(keyword.getKeywordValue().substring(1)) > 0.0) {
+                                            && Double.parseDouble(keyword.getKeywordValue().replace(",","").substring(1)) > 0.0) {
                                         if (!docIdsExistInLoan.get().contains("75")) {
                                             build.setMissingDocs(build.getMissingDocs() + ", Insurance Policy (Hazard, Flood, Windstorm, Etc)");
                                         }
@@ -284,7 +284,7 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
                                 .filter(keyword -> keyword.getKeywordName().equals("Mortgage Insurance"))
                                 .findFirst().ifPresent(keyword -> {
                                     if (!ObjectUtils.isEmpty(keyword.getKeywordValue())
-                                            && Double.parseDouble(keyword.getKeywordValue().substring(1)) > 0.0) {
+                                            && Double.parseDouble(keyword.getKeywordValue().replace(",","").substring(1)) > 0.0) {
                                         if (!docIdsExistInLoan.get().contains("35")) {
                                             build.setMissingDocs(build.getMissingDocs() + ", MI Certificate");
                                         }
