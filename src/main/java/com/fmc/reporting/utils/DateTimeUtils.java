@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Calendar;
 
 public class DateTimeUtils {
 
@@ -49,6 +50,13 @@ public class DateTimeUtils {
         LocalDate date = LocalDate.parse(input, formatter);
         System.out.println(date.getDayOfWeek().getValue());
         return date.getDayOfWeek().getValue() == 5;
+    }
+
+    public static boolean isMonday(final String input) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate date = LocalDate.parse(input, formatter);
+        System.out.println(date.getDayOfWeek().getValue());
+        return date.getDayOfWeek().getValue() == 1;
     }
 
     public static String getMondayDate(final String friday) {

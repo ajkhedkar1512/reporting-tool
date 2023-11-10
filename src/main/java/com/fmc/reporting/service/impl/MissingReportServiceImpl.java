@@ -200,7 +200,7 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
     private  List<MissingDocDto> buildMissingDocForCurrentDate(final List<DocumentDetailsDto> docList) {
         final  List<MissingDocDto> loanDetails = new ArrayList<>();
 
-        AtomicReference<Set<String>> docIdsExistInLoan = new AtomicReference<>(new HashSet<>());
+        Set<String> docIdsExistInLoan = new HashSet<>();
         final MissingDocDto build = MissingDocDto.builder().date(getFormattedDate(docList.get(0).getPackageCreatedDate()))
                 .loanId(docList.get(0).getLoanNumber()).packageId(docList.get(0).getPackageId()).build();
         ExternalServiceDtos finalDto = null;
@@ -216,19 +216,26 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
                 ExternalServiceDtos dto;
                 dto = mapper.readValue(inputStream, ExternalServiceDtos.class);
                 externaldtosList.add(dto);
-                docIdsExistInLoan.set(dto.getDetails().stream()
-                        .map(ExternalServiceDto::getDocId).collect(Collectors.toSet()));
+                Set<String> collect = dto.getDetails().stream()
+                        .map(ExternalServiceDto::getDocId).collect(Collectors.toSet());
+                Iterator it = collect.stream().iterator();
+                while(it.hasNext()) {
+                    docIdsExistInLoan.add(it.next().toString());
+                }
             } catch (final Exception ex) {
                 System.out.println("Error occurred to get data for package." + ex);
                 build.setComment(ex.getMessage());
             }
         });
+
+
         List<ExternalServiceDtos> extFilterList = externaldtosList.stream().filter(p -> p.getDetails().stream().anyMatch(data -> data.getDocId().equals("2353"))).collect(Collectors.toList());
         Collections.sort(extFilterList,(s1,s2)->{return getFormattedDate(s1.getPackageCreatedDate()).compareTo(getFormattedDate(s2.getPackageCreatedDate()));});
+        System.out.println(extFilterList.size());
         if (!ObjectUtils.isEmpty(extFilterList)) {
-            finalDto = extFilterList.get(extFilterList.size() - 1);
+            finalDto = extFilterList.get(0);
         }
-        if (ObjectUtils.isEmpty(finalDto) && !docIdsExistInLoan.get().contains("2353")) {
+        if (ObjectUtils.isEmpty(finalDto) && !docIdsExistInLoan.contains("2353")) {
             build.setMissingDocs("Closing Disclosure missing");
         } else {
             // cal the previous day doc List
@@ -242,20 +249,20 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
                         if (!ObjectUtils.isEmpty(loanType.getKeywordValue())) {
                             switch (loanType.getKeywordValue()) {
                                 case "VA":
-                                    build.setMissingDocs(getMissingDocNames_VALoanType(docIdsExistInLoan.get(), ReqDocsLoanEnum.mergedMapWithREG(ReqDocsLoanEnum.VA)));
+                                    build.setMissingDocs(getMissingDocNames_VALoanType(docIdsExistInLoan, ReqDocsLoanEnum.mergedMapWithREG(ReqDocsLoanEnum.VA)));
                                     break;
                                 case "FHA":
-                                    build.setMissingDocs(getMissingDocNames_FHALoanType(docIdsExistInLoan.get(), ReqDocsLoanEnum.mergedMapWithREG(ReqDocsLoanEnum.FHA)));
+                                    build.setMissingDocs(getMissingDocNames_FHALoanType(docIdsExistInLoan, ReqDocsLoanEnum.mergedMapWithREG(ReqDocsLoanEnum.FHA)));
                                     break;
                                 case "USDA":
-                                    build.setMissingDocs(getMissingDocNames(docIdsExistInLoan.get(), ReqDocsLoanEnum.mergedMapWithREG(ReqDocsLoanEnum.USDA)));
+                                    build.setMissingDocs(getMissingDocNames(docIdsExistInLoan, ReqDocsLoanEnum.mergedMapWithREG(ReqDocsLoanEnum.USDA)));
                                     break;
                                 default:
-                                    build.setMissingDocs(getMissingDocNames_AllLoanType(docIdsExistInLoan.get(), ReqDocsLoanEnum.REG.getRequiredDocIds()));
+                                    build.setMissingDocs(getMissingDocNames_AllLoanType(docIdsExistInLoan, ReqDocsLoanEnum.REG.getRequiredDocIds()));
                                     break;
                             }
                         } else {
-                            build.setMissingDocs(getMissingDocNames(docIdsExistInLoan.get(), ReqDocsLoanEnum.REG.getRequiredDocIds()));
+                            build.setMissingDocs(getMissingDocNames(docIdsExistInLoan, ReqDocsLoanEnum.REG.getRequiredDocIds()));
                         }
                         //Check FI
                         data.getKeywords().stream()
@@ -263,7 +270,7 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
                                 .findFirst().ifPresent(keyword -> {
                                     if (!ObjectUtils.isEmpty(keyword.getKeywordValue())
                                             && Double.parseDouble(keyword.getKeywordValue().replace(",","").substring(1)) > 0.0) {
-                                        if (!docIdsExistInLoan.get().contains("71")) {
+                                        if (!docIdsExistInLoan.contains("71")) {
                                             build.setMissingDocs(build.getMissingDocs() + ", Flood Certificate");
                                         }
                                     }
@@ -274,7 +281,7 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
                                 .findFirst().ifPresent(keyword -> {
                                     if (!ObjectUtils.isEmpty(keyword.getKeywordValue())
                                             && Double.parseDouble(keyword.getKeywordValue().replace(",","").substring(1)) > 0.0) {
-                                        if (!docIdsExistInLoan.get().contains("75")) {
+                                        if (!docIdsExistInLoan.contains("75")) {
                                             build.setMissingDocs(build.getMissingDocs() + ", Insurance Policy (Hazard, Flood, Windstorm, Etc)");
                                         }
                                     }
@@ -285,7 +292,7 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
                                 .findFirst().ifPresent(keyword -> {
                                     if (!ObjectUtils.isEmpty(keyword.getKeywordValue())
                                             && Double.parseDouble(keyword.getKeywordValue().replace(",","").substring(1)) > 0.0) {
-                                        if (!docIdsExistInLoan.get().contains("35")) {
+                                        if (!docIdsExistInLoan.contains("35")) {
                                             build.setMissingDocs(build.getMissingDocs() + ", MI Certificate");
                                         }
                                     }
@@ -297,40 +304,102 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
         }
 
 
+
         if (!ObjectUtils.isEmpty(build.getMissingDocs())) {
             build.setMissingDocs(build.getMissingDocs().substring(1) + " missing");
             build.setStatus("open");
-            String oldMissingId = null;
-            int count =4;
-            int days =1;
-            while(count>=1){
-                PresentDocId byDateAndLoanNumber = presentDocIdRepo
-                        .findByLoanNumberAndDate(docList.get(0).getLoanNumber(), minusDaysWithInput(getFormattedDate(java.time.LocalDate.now().toString()), days));
-                if(!ObjectUtils.isEmpty(byDateAndLoanNumber)){
-                    oldMissingId = byDateAndLoanNumber.getMissingDoc().trim().replace("missing","");
-                    break;
-                }
-                count--;
-                days++;
-            }
-            HashSet<String> s1=new HashSet<String>();
-            if(!ObjectUtils.isEmpty(oldMissingId)) {
-                String[] oldMissingIdSplit = oldMissingId.split(",");
-                String[] newMissingDocsSplit = build.getMissingDocs().trim().replace("missing","").split(",");
-                s1 = new HashSet<String>(Arrays.asList(oldMissingIdSplit));
-                s1.removeAll(Arrays.asList(newMissingDocsSplit));
+            lastDetails(docList, build, loanDetails);
 
-            }
-            presentDocIdRepo.save(PresentDocId.builder().missingDoc(build.getMissingDocs())
-                    .loanNumber(build.getLoanId())
-                    .date(DateTimeUtils.getFormattedDate(minusDays(java.time.LocalDate.now().toString()))).build());
-            s1.forEach(doc -> build.setMissingDocs(build.getMissingDocs().substring(1) + "," +doc + "(Received)"));
-            loanDetails.add(build);
-
+        } else {
+            lastDetails1(docList, build, loanDetails);
         }
 
 
         return loanDetails;
+    }
+
+    private void lastDetails(List<DocumentDetailsDto> docList, MissingDocDto build, List<MissingDocDto> loanDetails) {
+        String oldMissingId = null;
+        int count =4;
+        int days =1;
+        while(count>=1){
+            PresentDocId byDateAndLoanNumber = presentDocIdRepo
+                    .findByLoanNumberAndDate(docList.get(0).getLoanNumber(), minusDaysWithInput(getFormattedDate(java.time.LocalDate.now().toString()), days));
+            if(!ObjectUtils.isEmpty(byDateAndLoanNumber)){
+                oldMissingId = byDateAndLoanNumber.getMissingDoc().trim().replace("missing","");
+                break;
+            }
+            count--;
+            days++;
+        }
+        HashSet<String> s1=new HashSet<String>();
+        if(!ObjectUtils.isEmpty(oldMissingId)) {
+            String[] oldMissingIdSplit = oldMissingId.split(",");
+            String[] newMissingDocsSplit = build.getMissingDocs().trim().replace("missing","").split(",");
+            s1 = new HashSet<String>(Arrays.asList(oldMissingIdSplit));
+            s1.removeAll(Arrays.asList(newMissingDocsSplit));
+
+        }
+        presentDocIdRepo.save(PresentDocId.builder().missingDoc(build.getMissingDocs())
+                .loanNumber(build.getLoanId())
+                .date(DateTimeUtils.getFormattedDate(minusDays(java.time.LocalDate.now().toString()))).build());
+        s1.forEach(doc -> build.setMissingDocs(build.getMissingDocs().substring(1) + "," +doc + "(Received)"));
+        loanDetails.add(build);
+    }
+
+    private void lastDetails1(List<DocumentDetailsDto> docList, MissingDocDto build, List<MissingDocDto> loanDetails) {
+        if(docList.get(0).getLoanNumber().equals("7510012090"))
+        {
+            System.out.println("hello");
+        }
+        String oldMissingId = null;
+        int count =2;
+        int days =1;
+
+        while(count>=1){
+            String passedDate = null;
+            System.out.println(passedDate);
+            if (DateTimeUtils.isMonday(minusDaysWithInput(getFormattedDate(java.time.LocalDate.now().toString()), days))) {
+                String newDate= minusDaysWithInput(getFormattedDate(java.time.LocalDate.now().toString()), days);
+                passedDate = minusDaysWithInput(newDate, 2);
+                System.out.println("passed from monday" + passedDate);
+            } else {
+                passedDate = minusDaysWithInput(getFormattedDate(java.time.LocalDate.now().toString()),days);
+                System.out.println("normal day" + passedDate);
+            }
+            PresentDocId byDateAndLoanNumber = presentDocIdRepo
+                    .findByLoanNumberAndDate(docList.get(0).getLoanNumber(), passedDate);
+            if(!ObjectUtils.isEmpty(byDateAndLoanNumber)){
+                oldMissingId = byDateAndLoanNumber.getMissingDoc().trim().replace("missing","");
+                break;
+            }
+            count--;
+            days++;
+        }
+
+        if(!ObjectUtils.isEmpty(oldMissingId)) {
+            HashSet<String> s1 = new HashSet<String>();
+            if (!ObjectUtils.isEmpty(oldMissingId)) {
+                String[] oldMissingIdSplit = oldMissingId.split(",");
+                if (oldMissingIdSplit.length == 1) {
+                    String[] newMissingDocsSplit = null;
+                    if (!build.getMissingDocs().trim().replace("missing", "").equals("")) {
+                        newMissingDocsSplit = build.getMissingDocs().trim().replace("missing", "").split(",");
+                    }
+                        s1 = new HashSet<String>(Arrays.asList(oldMissingIdSplit));
+                    if(newMissingDocsSplit!=null) {
+                        s1.removeAll(Arrays.asList(newMissingDocsSplit));
+                    }
+
+                }
+
+            }
+            /*presentDocIdRepo.save(PresentDocId.builder().missingDoc(build.getMissingDocs())
+                    .loanNumber(build.getLoanId())
+                    .date(DateTimeUtils.getFormattedDate(minusDays(java.time.LocalDate.now().toString()))).build());*/
+            s1.forEach(doc -> build.setMissingDocs(doc + "(Received)"));
+            loanDetails.add(build);
+        }
     }
 
     private String getMissingDocNames(final Set<String> docIdsExistInLoan, final Map<String, String> reqDocIdNameMap) {
