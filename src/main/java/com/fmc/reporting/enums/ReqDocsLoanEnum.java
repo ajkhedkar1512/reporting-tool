@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 @Getter
 public enum ReqDocsLoanEnum {
 
-    REG("reg", Map.of("98", "1003", "2353", "CD", "76", "DOT", "77", "Note")),
+    REG("reg", Map.of("98", "1003 Final", "2353", "Closing Disclosure", "76", "Deed of Trust/Mortgage & Riders", "77", "Note & Addendums")),
 
     USDA("usda", Map.of( "601", "MIC/LGC/LNG")),
 

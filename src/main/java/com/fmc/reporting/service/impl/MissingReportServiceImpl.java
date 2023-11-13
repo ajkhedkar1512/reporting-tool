@@ -340,9 +340,15 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
             s1.removeAll(Arrays.asList(newMissingDocsSplit));
 
         }
-        presentDocIdRepo.save(PresentDocId.builder().missingDoc(build.getMissingDocs())
-                .loanNumber(build.getLoanId())
-                .date(DateTimeUtils.getFormattedDate(minusDays(java.time.LocalDate.now().toString()))).build());
+        if(DateTimeUtils.isMonday(java.time.LocalDate.now().toString())) {
+            presentDocIdRepo.save(PresentDocId.builder().missingDoc(build.getMissingDocs())
+                    .loanNumber(build.getLoanId())
+                    .date(DateTimeUtils.getFormattedDate(minusDaysWithInput(java.time.LocalDate.now().toString(),3))).build());
+        } else {
+            presentDocIdRepo.save(PresentDocId.builder().missingDoc(build.getMissingDocs())
+                    .loanNumber(build.getLoanId())
+                    .date(DateTimeUtils.getFormattedDate(minusDays(java.time.LocalDate.now().toString()))).build());
+        }
         s1.forEach(doc -> build.setMissingDocs(build.getMissingDocs().substring(1) + "," +doc + "(Received)"));
         loanDetails.add(build);
     }
@@ -359,9 +365,9 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
         while(count>=1){
             String passedDate = null;
             System.out.println(passedDate);
-            if (DateTimeUtils.isMonday(minusDaysWithInput(getFormattedDate(java.time.LocalDate.now().toString()), days))) {
+            if (DateTimeUtils.isMonday(getFormattedDate(java.time.LocalDate.now().toString()))) {
                 String newDate= minusDaysWithInput(getFormattedDate(java.time.LocalDate.now().toString()), days);
-                passedDate = minusDaysWithInput(newDate, 2);
+                passedDate = minusDaysWithInput(newDate, 3);
                 System.out.println("passed from monday" + passedDate);
             } else {
                 passedDate = minusDaysWithInput(getFormattedDate(java.time.LocalDate.now().toString()),days);
@@ -398,6 +404,7 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
                     .loanNumber(build.getLoanId())
                     .date(DateTimeUtils.getFormattedDate(minusDays(java.time.LocalDate.now().toString()))).build());*/
             s1.forEach(doc -> build.setMissingDocs(doc + "(Received)"));
+            build.setStatus("Completed");
             loanDetails.add(build);
         }
     }
