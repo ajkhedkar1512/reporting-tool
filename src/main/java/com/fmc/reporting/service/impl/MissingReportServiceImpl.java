@@ -302,9 +302,6 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
 
 
         }
-
-
-
         if (!ObjectUtils.isEmpty(build.getMissingDocs())) {
             build.setMissingDocs(build.getMissingDocs().substring(1) + " missing");
             build.setStatus("open");
