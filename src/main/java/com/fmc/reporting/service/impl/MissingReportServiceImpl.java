@@ -40,6 +40,12 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
         previousDates.stream().skip(1)
                 .forEach(date -> docDetails.addAll(documentDetailsService.getAllDocumentsBetweenDate(minusDays(date), date)));
         docDetails.addAll(documentDetailsService.getAllDocumentsForDate(currentDate));
+        previousDates.stream().skip(1).forEach(date2 -> {
+            if(isMonday(date2)){
+                docDetails.addAll(documentDetailsService.getAllDocumentsBetweenDate(minusDaysWithInput(date2,3), minusDaysWithInput(date2,1)));
+            }
+        });
+
         final List<MissingDocDto> loanDetails = new ArrayList<>();
         final List<MissingFieldMappingDto> mappingFields = mappingService.getAll();
 
