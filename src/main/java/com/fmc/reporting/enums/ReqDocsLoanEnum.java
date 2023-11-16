@@ -15,7 +15,7 @@ public enum ReqDocsLoanEnum {
 
     REG("reg", Map.of("98", "1003 Final", "2353", "Closing Disclosure", "76", "Deed of Trust/Mortgage & Riders", "77", "Note & Addendums")),
 
-    USDA("usda", Map.of( "601", "MIC/LGC/LNG")),
+    USDA("usda", Map.of( "601", "Loan Note Guarantee (USDA)")),
 
     VA("va", Map.of("601", "MIC/LGC/LNG")),
 
