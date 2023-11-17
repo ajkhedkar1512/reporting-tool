@@ -66,4 +66,22 @@ public class DocumentDetailsServiceImpl extends AbstractBaseService implements D
         return (int) docDetails.stream().map(doc -> (DocumentDetailsDto) convertToDTO(doc, DocumentDetailsDto.class)).count();
     }
 
+    @Override
+    public Integer getAllCompletedPackages(String date) {
+        final String fromDate = date + UTC_TIME;
+        System.out.println("fromDate" + fromDate);
+        final String toDate = plusDays(date) + UTC_TIME;
+        System.out.println("toDate" + toDate);
+        return repo.findAllCompleted(fromDate, toDate).size();
+    }
+
+    @Override
+    public Integer getFailedPackageCount(String date) {
+        final String fromDate = date + UTC_TIME;
+        System.out.println("fromDate" + fromDate);
+        final String toDate = plusDays(date) + UTC_TIME;
+        System.out.println("toDate" + toDate);
+        return repo.findAllFailedPackages(fromDate, toDate).size();
+    }
+
 }

@@ -16,4 +16,8 @@ public interface DocumentDetailsService {
 
 
     Integer getAllDocumentsNotCompleted(String to);
+
+    Integer getAllCompletedPackages(String date);
+
+    Integer getFailedPackageCount(String date);
 }
