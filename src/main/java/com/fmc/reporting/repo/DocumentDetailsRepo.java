@@ -26,4 +26,13 @@ public interface DocumentDetailsRepo extends BaseRepository<DocumentDetails, Str
 
     @Query(value = "{stageId: 6, packageCreatedDate: {$gte: ?0,$lt: ?1}, extractionEndedOn: {$gte: ?0,$lt: ?2}}")
     List<DocumentDetails> findAllQCRecords(String previousDate, String currentDate, String nextDate);
+
+    @Query(value = "{$or:[" +
+            "{stageId:4,userDocStatusId:3,classificationEndedOn:{$gte: ?0,$lt:?1 }}," +
+            "{stageId:5,userDocStatusId:3,extractionEndedOn:{$gte:?0,$lt:?1}}," +
+            "{stageId:6, eligibleForQcOn:{$gte:?0,$lt:?1}}]}")
+    List<DocumentDetails> findAllCompleted(String startDate, String endDate);
+
+    @Query(value = "{stageId: 99, packageCreatedDate: {$gte: ?0,$lt: ?1}}")
+    List<DocumentDetails> findAllFailedPackages(String startDate, String endDate);
 }
