@@ -5,6 +5,7 @@ import com.fmc.reporting.dto.LoanDetailsReport;
 import com.fmc.reporting.dto.MTDStatusReport;
 import com.fmc.reporting.dto.MissingDocReport;
 import com.fmc.reporting.service.MonthlyReportService;
+import com.fmc.reporting.service.MonthlyReviewerReportService;
 import com.fmc.reporting.service.ReportingService;
 import com.fmc.reporting.service.ReportingServiceV2;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,8 @@ public class ReportingController {
     private final ReportingServiceV2 reportingServiceV2;
 
     private final MonthlyReportService monthlyReportService;
+
+    private final MonthlyReviewerReportService monthlyReviewerReportService;
 
     @GetMapping(value = "MTDStatus", produces = MediaType.APPLICATION_JSON_VALUE)
     public MTDStatusReport buildMTDStatusReport(final @RequestParam(name = "date") String date) {
@@ -58,6 +61,15 @@ public class ReportingController {
     public ResponseEntity<StreamingResponseBody> exportMonthlyDate(final @RequestParam(name = "month") String month,
                                                         final HttpServletResponse response) {
         final FileDownloadDto fileResponse = monthlyReportService.export(month);
+        response.setContentType("application/octet-stream");
+        response.setHeader("Content-Disposition", "attachment; filename=" + fileResponse.getFilename() + ".xlsx");
+        return new ResponseEntity<>(fileResponse.getData(), HttpStatus.OK);
+    }
+
+    @GetMapping(value =  "monthly/reviewer/export")
+    public ResponseEntity<StreamingResponseBody> exportMonthlyReviewer(final @RequestParam(name = "month") String month,
+                                                                   final HttpServletResponse response) {
+        final FileDownloadDto fileResponse = monthlyReviewerReportService.export(month);
         response.setContentType("application/octet-stream");
         response.setHeader("Content-Disposition", "attachment; filename=" + fileResponse.getFilename() + ".xlsx");
         return new ResponseEntity<>(fileResponse.getData(), HttpStatus.OK);

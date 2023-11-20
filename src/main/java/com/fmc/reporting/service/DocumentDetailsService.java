@@ -20,4 +20,6 @@ public interface DocumentDetailsService {
     Integer getAllCompletedPackages(String date);
 
     Integer getFailedPackageCount(String date);
+
+    List<DocumentDetailsDto> findAllReviewerHistoryByDate(String from, String to);
 }
