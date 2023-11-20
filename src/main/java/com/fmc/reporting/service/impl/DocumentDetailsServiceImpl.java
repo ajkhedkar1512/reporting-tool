@@ -53,9 +53,18 @@ public class DocumentDetailsServiceImpl extends AbstractBaseService implements D
         final String previousDate = minusDays(date) + UTC_TIME;
         final String nextDate = (isFriday(minusDays(date)) ?  getMondayDate(minusDays(date)) :  plusDays(date) ) + UTC_TIME;
         final String currentDate = date + UTC_TIME;
-        final Integer classificationCompletedCount = repo.findAllClassificationCompleted(previousDate, currentDate, nextDate).size();
-        final Integer extractionCompletedCount = repo.findAllExtractionCompleted(previousDate, currentDate, nextDate).size();
-        final Integer qcCount = repo.findAllQCRecords(previousDate, currentDate, nextDate).size();
+         Integer classificationCompletedCount =0;
+         Integer extractionCompletedCount = 0;
+        Integer qcCount = 0;
+        if (isFriday(minusDays(date))) {
+            classificationCompletedCount = repo.findAllClassificationNewCompleted(previousDate, currentDate, nextDate).size();
+            extractionCompletedCount = repo.findAllExtractionNewCompleted(previousDate, currentDate, nextDate).size();
+             qcCount = repo.findAllQCNewRecords(previousDate, currentDate, nextDate).size();
+        } else {
+            classificationCompletedCount = repo.findAllClassificationCompleted(previousDate, currentDate, nextDate).size();
+             extractionCompletedCount = repo.findAllExtractionCompleted(previousDate, currentDate, nextDate).size();
+              qcCount = repo.findAllQCRecords(previousDate, currentDate, nextDate).size();
+        }
         return classificationCompletedCount + extractionCompletedCount + qcCount;
     }
 

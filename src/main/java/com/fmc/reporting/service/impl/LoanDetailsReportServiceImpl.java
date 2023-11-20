@@ -11,9 +11,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static com.fmc.reporting.utils.DateTimeUtils.minusDays;
+import static com.fmc.reporting.utils.DateTimeUtils.plusDays;
 
 @Service
 @RequiredArgsConstructor
@@ -26,8 +29,18 @@ public class LoanDetailsReportServiceImpl extends AbstractBaseService implements
     public LoanDetailsReport build(final String currentDate, final List<String> previousDates) {
         final List<DocumentDetailsDto> docDetails = new ArrayList<>();
         previousDates.stream()
-                .forEach(date -> docDetails.addAll(documentDetailsService.getAllDocumentsBetweenDate(minusDays(date), date)));
+                .forEach(date -> {
+                    if(DateTimeUtils.isFriday(date)) {
+                        String getMonday = DateTimeUtils.getMondayDate(date);
+                        docDetails.addAll(documentDetailsService.getAllDocumentsBetweenDate(minusDays(date), plusDays(date))) ;
+                    } else {
+                        docDetails.addAll(documentDetailsService.getAllDocumentsBetweenDate(minusDays(date), date)) ;
+                    }
+
+                        }
+                        );
         docDetails.addAll(documentDetailsService.getAllDocumentsForDate(currentDate));
+        Set<DocumentDetailsDto> docSet = new HashSet<>(docDetails);
         final List<LoanDetailsDto> loanDetails = new ArrayList<>();
         docDetails.forEach(doc -> {
             final String date = DateTimeUtils.getFormattedDate(doc.getPackageCreatedDate());

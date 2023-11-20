@@ -21,11 +21,20 @@ public interface DocumentDetailsRepo extends BaseRepository<DocumentDetails, Str
     @Query(value = "{stageId: 5, userDocStatusId: 3, packageCreatedDate: {$gte: ?0,$lt: ?1}, extractionEndedOn: {$gte: ?0,$lt: ?2}}")
     List<DocumentDetails> findAllExtractionCompleted(String previousDate, String currentDate, String nextDate);
 
+    @Query(value = "{stageId: 5, userDocStatusId: 3, packageCreatedDate: {$gte: ?0,$lt: ?2}, extractionEndedOn: {$gte: ?0,$lt: ?2}}")
+    List<DocumentDetails> findAllExtractionNewCompleted(String previousDate, String currentDate, String nextDate);
+
     @Query(value = "{stageId: 4, userDocStatusId: 3, packageCreatedDate: {$gte: ?0,$lt: ?1}, classificationEndedOn: {$gte: ?0,$lt: ?2}}")
     List<DocumentDetails> findAllClassificationCompleted(String previousDate, String currentDate, String nextDate);
 
+    @Query(value = "{stageId: 4, userDocStatusId: 3, packageCreatedDate: {$gte: ?0,$lt: ?2}, classificationEndedOn: {$gte: ?0,$lt: ?2}}")
+    List<DocumentDetails> findAllClassificationNewCompleted(String previousDate, String currentDate, String nextDate);
+
     @Query(value = "{stageId: 6, packageCreatedDate: {$gte: ?0,$lt: ?1}, extractionEndedOn: {$gte: ?0,$lt: ?2}}")
     List<DocumentDetails> findAllQCRecords(String previousDate, String currentDate, String nextDate);
+
+    @Query(value = "{stageId: 6, packageCreatedDate: {$gte: ?0,$lt: ?2}, extractionEndedOn: {$gte: ?0,$lt: ?2}}")
+    List<DocumentDetails> findAllQCNewRecords(String previousDate, String currentDate, String nextDate);
 
     @Query(value = "{$or:[" +
             "{stageId:4,userDocStatusId:3,classificationEndedOn:{$gte: ?0,$lt:?1 }}," +

@@ -14,8 +14,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
-import static com.fmc.reporting.utils.DateTimeUtils.getFormattedDate;
-import static com.fmc.reporting.utils.DateTimeUtils.minusDays;
+import static com.fmc.reporting.utils.DateTimeUtils.*;
 
 @Service
 @RequiredArgsConstructor
@@ -33,8 +32,13 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
         final List<DocumentDetailsDto> docDetails = new ArrayList<>();
         previousDates.stream().skip(1)
                 .forEach(date -> docDetails.addAll(documentDetailsService.getAllDocumentsBetweenDate(minusDays(date), date)));
+        previousDates.stream().skip(1).forEach(date2 -> {
+            if(isMonday(date2)){
+                docDetails.addAll(documentDetailsService.getAllDocumentsBetweenDate(minusDaysWithInput(date2,3), minusDaysWithInput(date2,1)));
+            }
+        });
         docDetails.addAll(documentDetailsService.getAllDocumentsForDate(currentDate));
-        final List<MissingDocDto> loanDetails = new ArrayList<>();
+        List<MissingDocDto> loanDetails = new ArrayList<>();
         final List<MissingFieldMappingDto> mappingFields = mappingService.getAll();
         docDetails.forEach(doc -> {
             if (((doc.getStageId().equals(4) || doc.getStageId().equals(5)) && doc.getUserDocStatusId().equals(3))
@@ -42,6 +46,7 @@ public class MissingReportServiceImpl extends AbstractBaseService implements Mis
                 loanDetails.addAll(buildMissingDocForCurrentDate(doc));
                //loanDetails.add(buildMissingDocForCurrentDateV2(doc, mappingFields));
         });
+        Collections.sort(loanDetails,(e1,e2)->e1.getDate().compareTo(e2.getDate()));
         return MissingDocReport.builder().missingDocs(loanDetails).build();
     }
 

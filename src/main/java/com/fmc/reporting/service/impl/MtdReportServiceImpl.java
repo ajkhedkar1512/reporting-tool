@@ -50,9 +50,16 @@ public class MtdReportServiceImpl extends AbstractBaseService implements MtdRepo
                 }
             }});
         final String fromDate = DateTimeUtils.minusDays(currentDate);
+        final List<DocumentDetailsDto> docDetails;
+        final Integer completedCount;
         if (repo.findByDate(fromDate).isEmpty()) {
-            final List<DocumentDetailsDto> docDetails = documentDetailsService.getAllDocumentsBetweenDate(fromDate, currentDate);
-            final Integer completedCount = documentDetailsService.getAllCompleted(currentDate);
+            if(DateTimeUtils.isFriday(fromDate)) {
+                String currentDateChanged = DateTimeUtils.getMondayDate(fromDate);
+                 docDetails = documentDetailsService.getAllDocumentsBetweenDate(fromDate, currentDateChanged);
+            } else {
+                 docDetails = documentDetailsService.getAllDocumentsBetweenDate(fromDate, currentDate);
+            }
+            completedCount = documentDetailsService.getAllCompleted(currentDate);
             int carryOver = documentDetailsService.getAllDocumentsNotCompleted(fromDate) + previousPending.get();
             int newAdditions = docDetails.size();
             int completed = completedCount +  carryOverCompleted.get();
