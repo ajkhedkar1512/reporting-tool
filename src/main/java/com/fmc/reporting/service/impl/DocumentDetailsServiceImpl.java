@@ -93,4 +93,12 @@ public class DocumentDetailsServiceImpl extends AbstractBaseService implements D
         return repo.findAllFailedPackages(fromDate, toDate).size();
     }
 
+    @Override
+    public List<DocumentDetailsDto> findAllReviewerHistoryByDate(String from, String to) {
+        List<DocumentDetails> mappedResults = repo.findAllReviewerHistoryByDate(from, to).getMappedResults();
+
+        return mappedResults.stream().map(doc -> (DocumentDetailsDto) convertToDTO(doc, DocumentDetailsDto.class))
+                .collect(Collectors.toList());
+    }
+
 }

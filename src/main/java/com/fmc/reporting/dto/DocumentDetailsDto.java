@@ -51,4 +51,12 @@ public class DocumentDetailsDto extends BaseDto {
 
     private String errorMessage;
 
+    private String startedOn;
+
+    private String endedOn;
+
+    private Integer count;
+
+    private String reviewer;
+
 }

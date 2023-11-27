@@ -4,6 +4,9 @@ import com.fmc.reporting.constants.MongoCollections;
 import lombok.*;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -53,5 +56,16 @@ public class DocumentDetails extends BaseDocument {
     private String extractionEndedOn;
 
     private String errorMessage;
+
+    private String startedOn;
+
+    private String endedOn;
+
+    private Integer count;
+
+    private String reviewer;
+
+    private List<ReviewerHistory> reviewerHistoryDetails = new ArrayList<>();
+
 
 }

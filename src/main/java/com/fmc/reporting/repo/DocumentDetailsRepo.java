@@ -1,6 +1,9 @@
 package com.fmc.reporting.repo;
 
 import com.fmc.reporting.document.DocumentDetails;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.repository.Aggregation;
+import org.springframework.data.mongodb.repository.Meta;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -44,4 +47,46 @@ public interface DocumentDetailsRepo extends BaseRepository<DocumentDetails, Str
 
     @Query(value = "{stageId: 99, packageCreatedDate: {$gte: ?0,$lt: ?1}}")
     List<DocumentDetails> findAllFailedPackages(String startDate, String endDate);
+
+
+    @Meta(allowDiskUse = true)
+    @Aggregation(pipeline = {
+                 "  {\n" +
+                 "    $match: {\n" +
+                 "      'reviewerHistoryDetails.startedOn': {\n" +
+                 "        $gte: ?0,\n" +
+                 "        $lt: ?1,\n" +
+                 "      },\n" +
+                 "    },\n" +
+                 "  }",
+                 "  {\n" +
+                 "    $unwind: {\n" +
+                 "      path: \"$reviewerHistoryDetails\",\n" +
+                 "    },\n" +
+                 "  }",
+                 "  {\n" +
+                 "    $group: {\n" +
+                 "      _id: {\n" +
+                 "        reviewer:\n" +
+                 "          \"$reviewerHistoryDetails.reviewer\",\n" +
+                 "        stage: \"$reviewerHistoryDetails.stage\",\n" +
+                 "      },\n" +
+                 "      count: {\n" +
+                 "        $sum: 1,\n" +
+                 "      },\n" +
+                 "    },\n" +
+                 "  }",
+                 "  {\n" +
+                 "    $project: {\n" +
+                 "      _id: 0,\n" +
+                 "      reviewer: \"$_id.reviewer\",\n" +
+                 "      stage: \"$_id.stage\",\n" +
+                 "      count: 1,\n" +
+                 "    },\n" +
+                 "  }"
+    })
+    AggregationResults<DocumentDetails> findAllReviewerHistoryByDate(String startDate, String endDate);
+
+
+
 }
