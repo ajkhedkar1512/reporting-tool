@@ -54,7 +54,7 @@ public class MtdReportServiceImpl extends AbstractBaseService implements MtdRepo
         final Integer completedCount;
         if (repo.findByDate(fromDate).isEmpty()) {
             if(DateTimeUtils.isFriday(fromDate)) {
-                String currentDateChanged = DateTimeUtils.getMondayDate(fromDate);
+                String currentDateChanged = DateTimeUtils.minusDays(DateTimeUtils.getMondayDate(fromDate));
                  docDetails = documentDetailsService.getAllDocumentsBetweenDate(fromDate, currentDateChanged);
             } else {
                  docDetails = documentDetailsService.getAllDocumentsBetweenDate(fromDate, currentDate);
